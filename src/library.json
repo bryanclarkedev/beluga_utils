@@ -1,7 +1,7 @@
 {
     "name": "beluga_utils",
     "version": "0.0.1",
-    "description": "Some utility classes for Arduino ESP32 with PlatformIO.",
+    "description": "Some C++ utility classes.",
     "keywords": "arduino, esp32",
     "repository":
     {
@@ -13,7 +13,7 @@
       {
         "name": "Bryan Clarke",
         "email": "bryanclarkedev@gmail.com",
-        "url": "https://www.john-smith/contact"
+        "url": "https://bryanclarke.dev/contact"
       }
     ],
     "license": "MIT",
