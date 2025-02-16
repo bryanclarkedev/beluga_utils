@@ -1,0 +1,25 @@
+{
+    "name": "beluga_utils",
+    "version": "0.0.1",
+    "description": "Some C++ utility classes.",
+    "keywords": "arduino, esp32",
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/bryanclarkedev/beluga_utils.git"
+    },
+    "authors":
+    [
+      {
+        "name": "Bryan Clarke",
+        "email": "bryanclarkedev@gmail.com",
+        "url": "https://bryanclarke.dev/contact"
+      }
+    ],
+    "license": "MIT",
+    "homepage": "https://www.bryanclarke.dev/",
+    "dependencies": {
+    },
+    "frameworks": "arduino",
+    "platforms": "espressif32"
+  }
