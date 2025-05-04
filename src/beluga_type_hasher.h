@@ -33,6 +33,10 @@ std::string type_name(const T&)
 }
 #endif
 
+/*
+Cannot use typeid due to Arduino using -fno-rtti
+So we have had to get a bit hacky
+*/
 namespace beluga_utils
 {
     template <typename T>
