@@ -3,45 +3,55 @@
 namespace beluga_utils
 {
     /*
-    Given an mqtt string for for unknown topic, extract the topic and return it
+    The string is assumed to be addressed to a device
+    <device name><device delimiter><key1><key-val delimiter><val1><topic delimiter><key2><key-val delim><val2>
+    e.g. mqtt_client1@led1_setpoint:1|led2_setpoint:0
     If parsing fails, do nothing
+    We split on the <device delimiter> and the device name is element 0
     */
-   bool get_topic(std::string this_str,  std::string & return_val)
+   bool get_device(std::string this_str,  std::string & return_val)
    {
-       std::vector<std::string> topic_and_payload_vec;
-       topic_and_payload_vec = beluga_utils::split_string(this_str, _topic_delimiter);
-       if(topic_and_payload_vec.size() != 2)
+       std::vector<std::string> device_and_payload_vec;
+       device_and_payload_vec = beluga_utils::split_string(this_str, _field_delimiter);
+       if(device_and_payload_vec.size() != 2)
        {
            //Could not parse
            return false;
        }
 
-       return_val = topic_and_payload_vec[0];
+       return_val = device_and_payload_vec[0];
        return true;
    }
 
+    /*
+    The string is assumed to be addressed to a device
+    <device name><device delimiter><key1><key-val delimiter><val1><topic delimiter><key2><key-val delim><val2>
+    e.g. mqtt_client1@led1_setpoint:1|led2_setpoint:0
+    If parsing fails, do nothing
+    We split on the <device delimiter> and the payload is element 1
+    */
    bool get_payload(std::string this_str,  std::string & return_val)
    {
-       std::vector<std::string> topic_and_payload_vec;
-       topic_and_payload_vec = beluga_utils::split_string(this_str, _topic_delimiter);
-       if(topic_and_payload_vec.size() != 2)
+       std::vector<std::string> device_and_payload_vec;
+       device_and_payload_vec = beluga_utils::split_string(this_str, _field_delimiter);
+       if(device_and_payload_vec.size() != 2)
        {
            //Could not parse
            return false;
        }
 
-       return_val = topic_and_payload_vec[1];
+       return_val = device_and_payload_vec[0];
        return true;
    }
 
-       /*
+    /*
     Given an mqtt string for an arbitrary topic, parse and extract all subtopic key-val pairs and return them in a map
     Note that the map is keyed by SUBTOPIC. The TOPIC is returned in topic_str if possible
     For mqtt topics including both topic and subtopic, you will need to re-prepend the topic to the subtopic
     */
    bool deserialise(std::string this_str,  std::map<std::string, std::string> & return_val, std::string * topic_str)
    {
-       std::vector<std::string> topic_and_payload_vec = beluga_utils::split_string(this_str, _topic_delimiter);
+       std::vector<std::string> topic_and_payload_vec = beluga_utils::split_string(this_str, _field_delimiter);
        if(topic_and_payload_vec.size() != 2)
        {
            //Could not parse
@@ -57,11 +67,11 @@ namespace beluga_utils
        }
 
        std::vector<std::string> subtopics_vec;
-       subtopics_vec = beluga_utils::split_string(topic_and_payload_vec[1], _subtopic_delimiter);
+       subtopics_vec = beluga_utils::split_string(topic_and_payload_vec[1], _field_delimiter);
        for(auto iter = subtopics_vec.begin(); iter != subtopics_vec.end(); iter++)
        {
            std::vector<std::string> key_val_vec;
-           key_val_vec = beluga_utils::split_string(*iter, _key_val_delimiter);
+           key_val_vec = beluga_utils::split_string(*iter, _field_delimiter);
            if(key_val_vec.size() != 2)
            {
                //Could not parse
@@ -107,11 +117,19 @@ namespace beluga_utils
        return deserialise(this_str, subtopic_map);        
    }
 
+   /*
+   Message format: 
+   <topic><topic_delimiter><key1><key_val_delimiter><val1><subtopic delimiter><key2><key_val_delimiter><val2> 
+   e.g.:
+   gpio1@direction:OUT|value:1
+
+   The gist is we might want to send a message to a device <topic> and have it then transmit messages on topic <subtopic>
+   */
    bool serialise(std::map<std::string, std::string> message_map, std::string topic_str, std::string & return_val)
    {
         std::stringstream _ss;
        _ss.str("");
-       _ss << topic_str << _topic_delimiter;
+       _ss << topic_str << _field_delimiter;
        bool first_subtopic = true;
        for(auto iter = message_map.begin(); iter != message_map.end(); iter++)
        {
@@ -119,9 +137,9 @@ namespace beluga_utils
            {
                first_subtopic = false;
            }else{
-               _ss << _subtopic_delimiter;
+               _ss << _field_delimiter;
            }
-           _ss << iter->first << _key_val_delimiter << iter->second;
+           _ss << iter->first << _field_delimiter << iter->second;
        }
        if(first_subtopic)
        {
@@ -141,7 +159,7 @@ namespace beluga_utils
        }
        std::stringstream _ss;
        _ss.str("");
-       _ss << this_topic << _topic_delimiter << this_payload;
+       _ss << this_topic << _field_delimiter << this_payload;
        return_val = _ss.str();
        _ss.str("");
        return true;
@@ -175,7 +193,7 @@ namespace beluga_utils
            Serial.print("Parsing ");
            Serial.println(rx_iter->c_str());
            std::map<std::string, std::string> subtopic_data;
-           //bool got_parsed_data = beluga_utils::mqtt_target_topic_parser(*rx_iter, target_topic, _topic_delimiter, _subtopic_delimiter, _key_val_delimiter, subtopic_data);
+           //bool got_parsed_data = beluga_utils::mqtt_target_topic_parser(*rx_iter, target_topic, _device_delimiter, _subtopic_delimiter, _key_val_delimiter, subtopic_data);
            bool got_parsed_data = deserialise_target_topic(*rx_iter, target_topic, subtopic_data);
 
            if(! got_parsed_data)
@@ -204,5 +222,19 @@ namespace beluga_utils
 
        return got_data;
    }
+
+
+    std::string combine_for_primary_tx(std::string target_device, std::string topic, std::string payload)
+    {
+        std::stringstream ss;
+        ss << target_device << _field_delimiter << topic << _field_delimiter << payload;
+        return ss.str();
+    }
+
+    std::vector<std::string> split_from_primary_rx(std::string rx_str)
+    {
+       std::vector<std::string> return_data = beluga_utils::split_string(rx_str, _field_delimiter);
+       return return_data;
+    }
 
 }
