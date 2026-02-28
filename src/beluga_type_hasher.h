@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <sstream>
 #include <utility> //for decltype and declval
+#include <vector> 
+#include "beluga_string.h"
 
 //https://forum.arduino.cc/t/error-cannot-use-typeid-with-fno-rtti/131351
 //Also https://arduino.stackexchange.com/questions/3079/how-to-retrieve-the-data-type-of-a-variable
@@ -72,11 +74,16 @@ namespace beluga_utils
         {
             return s;
         }
-        std::vector<std::string> v = split_string(s, "::");
+
+        std::string delim = "::";
+        std::string s2(s); //Need to explicitly make a string. Not fully sure why.
+        std::vector<std::string> v = beluga_utils::split_string(s2, delim);
         return v[v.size()-1]; //Last entry in vector. This should still work even if there is no namespace.
 
     }
 
+    #define USE_ALT_DEF 0
+    #if USE_ALT_DEF
     //WE need a function for shared_ptr else we end up with a trailing >
     //We might be able to merge these. Future problems.            
     template <typename T>
@@ -95,10 +102,10 @@ namespace beluga_utils
         {
             return s;
         }
-        std::vector<std::string> v = split_string(s, "::");
+        std::vector<std::string> v = beluga_utils::split_string(s, "::");
         return v[v.size()-1]; //Last entry in vector. This should still work even if there is no namespace.
     }
 
-
+    #endif
 
 }
